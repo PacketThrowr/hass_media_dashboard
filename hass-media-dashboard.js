@@ -404,6 +404,13 @@ const STYLES = `
     padding: 2px 7px; border-radius: 10px;
   }
 
+  .queue-mode-badge {
+    font-size: 0.75rem; color: var(--text3);
+    flex-shrink: 0;
+  }
+
+  .queue-mode-badge.active { color: var(--accent-hi); }
+
   .queue-chevron {
     color: var(--text3); transition: transform 0.2s;
   }
@@ -1056,6 +1063,7 @@ class MediaDashboardPanel extends HTMLElement {
     this._selectedPlayer = null;
     this._pendingPlayState = null;  // optimistic play/pause state, cleared on next hass update
     this._queueItems = [];
+    this._queueMeta = null;
     this._queueOpen = true;
     this._queueFetching = false;
     this._lastQueuePlayer = null;
@@ -1167,39 +1175,36 @@ class MediaDashboardPanel extends HTMLElement {
 
   async _fetchQueue(entityId) {
     if (!this._hass || this._queueFetching) return;
-    const state = this._hass.states[entityId];
-    if (!state) return;
-
-    // MA exposes queue items via websocket. Try known message formats in order.
-    const massPlayerId = state.attributes.mass_player_id;
-    const queueId = state.attributes.mass_queue_id || massPlayerId || entityId;
+    if (!this._hass.states[entityId]) return;
 
     this._queueFetching = true;
     let items = [];
+    let queueMeta = null;
 
-    const attempts = [
-      // Confirmed working format (user-verified)
-      { type: "music_assistant/get_queue", entity_id: entityId },
-      // Fallback formats
-      { type: "music_assistant/queue_items", entity_id: entityId },
-      { type: "music_assistant/queue_items", queue_id: queueId },
-      { type: "mass/queue_items", queue_id: queueId },
-    ];
+    try {
+      // music_assistant.get_queue is a response service — call it via call_service
+      // with return_response:true. Response is nested under result.response.
+      const result = await this._hass.callWS({
+        type: "call_service",
+        domain: "music_assistant",
+        service: "get_queue",
+        service_data: { entity_id: entityId },
+        return_response: true,
+      });
 
-    for (const msg of attempts) {
-      try {
-        const result = await this._hass.callWS(msg);
-        const raw = result?.items || result?.queue_items || result?.tracks || result?.queue?.items || result;
-        if (Array.isArray(raw) && raw.length > 0) {
-          items = raw;
-          break;
-        }
-      } catch (_) {
-        // try next format
-      }
+      // HA wraps response-service results in { context, response }
+      const data = result?.response ?? result;
+
+      // MA get_queue returns queue metadata + items array
+      queueMeta = data;
+      const raw = data?.items ?? data?.queue_items ?? data?.tracks ?? [];
+      if (Array.isArray(raw)) items = raw;
+    } catch (_) {
+      // Service unavailable or MA not installed — queue stays empty
     }
 
     this._queueItems = items;
+    this._queueMeta  = queueMeta;  // store full response for shuffle/repeat state
     this._queueFetching = false;
     this._renderLeft();
   }
@@ -1375,46 +1380,69 @@ class MediaDashboardPanel extends HTMLElement {
 
   _renderQueueSection(qPos, qSize) {
     const items = this._queueItems;
+    const meta  = this._queueMeta;
     const hasItems = items.length > 0;
-    const remaining = qSize && qPos ? qSize - qPos : null;
-    const countLabel = qPos && qSize
-      ? `${qPos} / ${qSize}`
-      : qSize ? `${qSize} tracks` : hasItems ? `${items.length} tracks` : "";
+
+    // Prefer counts from MA response, fall back to entity attributes
+    const totalCount  = meta?.items?.length ?? meta?.queue_size ?? qSize ?? (hasItems ? items.length : null);
+    const currentIdx  = meta?.current_index ?? (qPos != null ? qPos - 1 : null);
+    const remaining   = totalCount != null && currentIdx != null ? totalCount - currentIdx - 1 : null;
+    const shuffle     = meta?.shuffle_enabled ?? meta?.shuffle ?? false;
+    const repeat      = meta?.repeat_mode ?? meta?.repeat ?? "off";
+
+    const countLabel  = currentIdx != null && totalCount != null
+      ? `${currentIdx + 1} / ${totalCount}`
+      : totalCount ? `${totalCount} tracks` : "";
+
     const openClass = this._queueOpen ? "queue-open" : "";
 
     let bodyHtml;
     if (this._queueFetching) {
       bodyHtml = `<div class="queue-load-hint">Loading queue…</div>`;
     } else if (hasItems) {
-      bodyHtml = items.slice(0, 25).map((item, i) => this._renderQueueItem(item, i, qPos)).join("");
-    } else if (qSize) {
-      // WS data unavailable but attributes tell us there's a queue
-      bodyHtml = `<div class="queue-load-hint">${qSize} track${qSize !== 1 ? "s" : ""} in queue${remaining ? ` · ${remaining} remaining` : ""}</div>`;
+      bodyHtml = items.slice(0, 30).map((item, i) => this._renderQueueItem(item, i, currentIdx)).join("");
+    } else if (totalCount) {
+      bodyHtml = `<div class="queue-load-hint">${totalCount} track${totalCount !== 1 ? "s" : ""} in queue${remaining != null ? ` · ${remaining} remaining` : ""}</div>`;
     } else {
-      bodyHtml = `<div class="queue-load-hint" style="color:var(--text3)">No queue information available</div>`;
+      bodyHtml = `<div class="queue-load-hint">Queue empty</div>`;
     }
+
+    const shuffleIcon = shuffle
+      ? `<span class="queue-mode-badge active" title="Shuffle on">⇄</span>`
+      : "";
+    const repeatIcon = repeat !== "off"
+      ? `<span class="queue-mode-badge active" title="Repeat: ${repeat}">↻</span>`
+      : "";
 
     return `
       <div class="lp-divider"></div>
       <div class="queue-header ${openClass}" id="queueToggle">
         <span class="queue-header-label">${ICON.queue} Queue</span>
         ${countLabel ? `<span class="queue-count-badge">${countLabel}</span>` : ""}
+        ${shuffleIcon}${repeatIcon}
         <span class="queue-chevron">${ICON.chevronDown}</span>
       </div>
       ${this._queueOpen ? `<div class="queue-list">${bodyHtml}</div>` : ""}
     `;
   }
 
-  _renderQueueItem(item, index, currentPos) {
-    const pos = item.queue_position ?? index;
-    const isCurrent = currentPos != null && pos === currentPos - 1;
-    const title = item.name || item.media_title || "Unknown";
-    const artist = item.artists?.[0]?.name || item.media_artist || "";
-    const thumb = item.image || item.media_image_url || null;
-    const dur = item.duration ? formatTime(item.duration) : "";
+  _renderQueueItem(item, index, currentIdx) {
+    // MA get_queue returns items with queue_item_id, name, duration, artists[], image
+    // Position in queue is the array index; queue_item_id is MA's internal ID
+    const pos = item.queue_item_id != null ? index : (item.position ?? index);
+    const isCurrent = currentIdx != null && index === currentIdx;
+
+    const title  = item.name || item.track?.name || item.media_title || "Unknown";
+    const artist = item.artists?.[0]?.name
+                || item.track?.artists?.[0]?.name
+                || item.media_artist || "";
+    const thumb  = item.image || item.media_image_url
+                || item.track?.image || null;
+    const dur    = item.duration ? formatTime(item.duration) : "";
+
     return `
       <div class="queue-item ${isCurrent ? "current" : ""}">
-        <span class="queue-item-num">${isCurrent ? "▶" : pos + 1}</span>
+        <span class="queue-item-num">${isCurrent ? "▶" : index + 1}</span>
         ${thumb
           ? `<img class="queue-item-thumb" src="${this._esc(thumb)}" alt="">`
           : `<div class="queue-item-thumb-placeholder">${ICON.music}</div>`
@@ -1552,6 +1580,7 @@ class MediaDashboardPanel extends HTMLElement {
     panel.querySelector("#playerSelect")?.addEventListener("change", (e) => {
       this._selectedPlayer = e.target.value;
       this._queueItems = [];
+      this._queueMeta = null;
       this._renderLeft();
     });
 
