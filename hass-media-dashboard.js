@@ -38,96 +38,168 @@ const STYLES = `
   .left-panel {
     display: flex;
     flex-direction: column;
-    width: 340px;
-    min-width: 300px;
+    width: 360px;
+    min-width: 320px;
     background: var(--card-background-color, #1c1c1c);
-    border-right: 1px solid var(--divider-color, #333);
-    overflow-y: auto;
-    padding: 16px;
-    gap: 12px;
+    border-right: 1px solid var(--divider-color, #2a2a2a);
+    overflow: hidden;
     box-sizing: border-box;
   }
 
-  .panel-title {
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.1em;
+  /* ── Player dropdown ── */
+  .player-dropdown-wrap {
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid var(--divider-color, #2a2a2a);
+    flex-shrink: 0;
+  }
+
+  .dropdown-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--secondary-text-color, #888);
-    margin-bottom: 4px;
+    color: var(--secondary-text-color, #666);
+    margin-bottom: 8px;
   }
 
-  /* ── Now Playing Card ── */
-  .now-playing {
-    border-radius: 12px;
-    overflow: hidden;
+  .player-select-custom {
+    position: relative;
+  }
+
+  .player-select-custom select {
+    width: 100%;
+    padding: 10px 36px 10px 14px;
     background: var(--secondary-background-color, #252525);
+    border: 1px solid var(--divider-color, #383838);
+    border-radius: 10px;
+    color: var(--primary-text-color, #eee);
+    font-size: 0.9rem;
+    font-family: inherit;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s;
   }
 
-  .now-playing.inactive {
-    opacity: 0.5;
+  .player-select-custom select:focus {
+    border-color: var(--accent-color, #6200ea);
   }
 
-  .album-art {
+  .player-select-arrow {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: var(--secondary-text-color, #777);
+  }
+
+  .player-select-arrow svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+    display: block;
+  }
+
+  /* ── Now Playing card area ── */
+  .now-playing-wrap {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Media card ── */
+  .media-card {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .media-art-wrap {
+    position: relative;
     width: 100%;
     aspect-ratio: 1;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .media-art {
+    width: 100%;
+    height: 100%;
     object-fit: cover;
     display: block;
-    background: #2a2a2a;
   }
 
-  .album-art-placeholder {
+  .media-art-gradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom,
+      transparent 40%,
+      rgba(0,0,0,0.7) 100%
+    );
+    pointer-events: none;
+  }
+
+  .media-art-overlay-text {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 20px 20px 0;
+  }
+
+  .media-art-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    line-height: 1.25;
+    color: #fff;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+    margin-bottom: 3px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .media-art-artist {
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.75);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .media-art-placeholder {
     width: 100%;
-    aspect-ratio: 1;
+    height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #1e3a5f 0%, #0d1b2a 100%);
-    font-size: 4rem;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
   }
 
-  .track-info {
-    padding: 14px 16px 4px;
+  .media-art-placeholder svg {
+    width: 72px;
+    height: 72px;
+    fill: rgba(255,255,255,0.15);
   }
 
-  .track-title {
-    font-size: 1rem;
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .track-artist {
-    font-size: 0.85rem;
-    color: var(--secondary-text-color, #999);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-top: 2px;
-  }
-
-  .track-album {
-    font-size: 0.75rem;
-    color: var(--disabled-text-color, #666);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-top: 2px;
-  }
-
-  /* Progress bar */
+  /* Progress */
   .progress-section {
-    padding: 10px 16px 4px;
+    padding: 16px 20px 0;
+    flex-shrink: 0;
   }
 
   .progress-bar-wrap {
     position: relative;
-    height: 4px;
+    height: 3px;
     border-radius: 2px;
-    background: var(--divider-color, #444);
+    background: var(--divider-color, #383838);
     cursor: pointer;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .progress-bar-fill {
@@ -135,14 +207,33 @@ const STYLES = `
     border-radius: 2px;
     background: var(--accent-color, #6200ea);
     transition: width 1s linear;
+    position: relative;
+  }
+
+  .progress-bar-fill::after {
+    content: '';
+    position: absolute;
+    right: -5px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--accent-color, #6200ea);
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .progress-bar-wrap:hover .progress-bar-fill::after {
+    opacity: 1;
   }
 
   .progress-times {
     display: flex;
     justify-content: space-between;
-    font-size: 0.7rem;
-    color: var(--secondary-text-color, #888);
-    margin-top: 4px;
+    font-size: 0.68rem;
+    color: var(--secondary-text-color, #666);
+    margin-top: 6px;
   }
 
   /* Controls */
@@ -150,97 +241,152 @@ const STYLES = `
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 8px 16px 14px;
+    gap: 4px;
+    padding: 12px 20px 10px;
+    flex-shrink: 0;
   }
 
   .ctrl-btn {
     background: none;
     border: none;
-    color: var(--primary-text-color, #eee);
+    color: var(--primary-text-color, #ccc);
     cursor: pointer;
     border-radius: 50%;
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.15s;
+    transition: background 0.15s, color 0.15s;
     flex-shrink: 0;
   }
 
   .ctrl-btn:hover {
-    background: rgba(255,255,255,0.08);
-  }
-
-  .ctrl-btn.primary {
-    width: 52px;
-    height: 52px;
-    background: var(--accent-color, #6200ea);
+    background: rgba(255,255,255,0.07);
     color: #fff;
   }
 
+  .ctrl-btn.primary {
+    width: 56px;
+    height: 56px;
+    background: var(--accent-color, #6200ea);
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(98,0,234,0.35);
+  }
+
   .ctrl-btn.primary:hover {
-    background: var(--accent-color, #5000cc);
-    opacity: 0.9;
+    opacity: 0.88;
+    box-shadow: 0 4px 20px rgba(98,0,234,0.5);
   }
 
   .ctrl-btn svg {
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     fill: currentColor;
   }
 
   .ctrl-btn.primary svg {
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
   }
 
-  /* Volume in left panel (active player) */
+  /* Volume row */
   .active-volume {
-    padding: 0 16px 14px;
+    padding: 4px 20px 20px;
     display: flex;
     align-items: center;
     gap: 10px;
-  }
-
-  .active-volume svg {
-    width: 18px;
-    height: 18px;
-    fill: var(--secondary-text-color, #888);
     flex-shrink: 0;
   }
 
-  /* ── Player list ── */
-  .player-list {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .player-item {
+  .mute-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    border-radius: 10px;
-    background: var(--secondary-background-color, #252525);
-    cursor: pointer;
-    transition: background 0.15s;
+    color: var(--secondary-text-color, #777);
+    flex-shrink: 0;
+    transition: color 0.15s;
   }
 
-  .player-item:hover {
-    background: rgba(255,255,255,0.07);
+  .mute-btn:hover { color: var(--primary-text-color, #eee); }
+
+  .mute-btn svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
   }
 
-  .player-item.selected {
-    background: rgba(98,0,234,0.2);
-    border: 1px solid rgba(98,0,234,0.4);
+  .mute-btn.muted { color: var(--error-color, #f44336); }
+
+  /* ── Nothing Playing state ── */
+  .nothing-playing {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 32px;
+    text-align: center;
+    gap: 0;
   }
 
+  .nothing-playing-icon {
+    width: 96px;
+    height: 96px;
+    margin-bottom: 24px;
+    position: relative;
+  }
+
+  .nothing-playing-icon-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.06);
+    animation: np-pulse 3s ease-in-out infinite;
+  }
+
+  .nothing-playing-icon-ring:nth-child(2) {
+    inset: -12px;
+    animation-delay: 1s;
+    border-color: rgba(255,255,255,0.03);
+  }
+
+  .nothing-playing-icon svg {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 48px;
+    height: 48px;
+    fill: rgba(255,255,255,0.12);
+  }
+
+  @keyframes np-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.08); opacity: 0.6; }
+  }
+
+  .nothing-playing h3 {
+    margin: 0 0 8px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--secondary-text-color, #777);
+  }
+
+  .nothing-playing p {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--disabled-text-color, #555);
+    line-height: 1.6;
+    max-width: 220px;
+  }
+
+  /* ── Player status dot (used in popup) ── */
   .player-status-dot {
-    width: 8px;
-    height: 8px;
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
     background: var(--disabled-text-color, #555);
     flex-shrink: 0;
@@ -248,21 +394,7 @@ const STYLES = `
 
   .player-status-dot.playing {
     background: #4caf50;
-    box-shadow: 0 0 6px #4caf50;
-  }
-
-  .player-item-name {
-    flex: 1;
-    font-size: 0.9rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .player-item-state {
-    font-size: 0.75rem;
-    color: var(--secondary-text-color, #888);
-    flex-shrink: 0;
+    box-shadow: 0 0 5px #4caf50;
   }
 
   /* ── Right Panel ── */
@@ -830,12 +962,17 @@ class MediaDashboardPanel extends HTMLElement {
       this._subscribePlayers();
     }
     this._syncPlayers();
-    if (!this._selectedPlayer && this._players.length) {
-      // Auto-select the first playing player, else first overall
-      const playing = this._players.find(
-        (p) => hass.states[p]?.state === "playing"
-      );
-      this._selectedPlayer = playing || this._players[0];
+    // Auto-select: prefer a playing player; if current selection stopped, pick next active one
+    const activePlayers = this._players.filter(
+      (p) => hass.states[p]?.state === "playing" || hass.states[p]?.state === "paused"
+    );
+    if (!this._selectedPlayer && activePlayers.length) {
+      this._selectedPlayer = activePlayers.find((p) => hass.states[p]?.state === "playing") || activePlayers[0];
+    } else if (this._selectedPlayer && !activePlayers.includes(this._selectedPlayer) && activePlayers.length) {
+      // Previously selected player is no longer active — switch to one that is
+      this._selectedPlayer = activePlayers.find((p) => hass.states[p]?.state === "playing") || activePlayers[0];
+    } else if (!activePlayers.length) {
+      this._selectedPlayer = null;
     }
     this._updateAll();
   }
@@ -911,67 +1048,103 @@ class MediaDashboardPanel extends HTMLElement {
 
   // ── Left Panel ───────────────────────────────────────────────────────────────
 
+  _activePlayers() {
+    if (!this._hass) return [];
+    return this._players.filter((id) => {
+      const s = this._hass.states[id]?.state;
+      return s === "playing" || s === "paused";
+    });
+  }
+
   _renderLeft() {
     const panel = this.shadowRoot.getElementById("leftPanel");
     if (!panel) return;
 
-    const hass = this._hass;
+    const active = this._activePlayers();
     const selId = this._selectedPlayer;
-    const selState = selId && hass ? hass.states[selId] : null;
+    const selState = selId && this._hass ? this._hass.states[selId] : null;
 
     panel.innerHTML = `
-      <div class="panel-title">Now Playing</div>
-      ${this._renderNowPlaying(selId, selState)}
-      <div class="panel-title" style="margin-top:8px">Players</div>
-      <div class="player-list" id="playerList">
-        ${this._renderPlayerList()}
+      <div class="player-dropdown-wrap">
+        <div class="dropdown-label">Now Playing</div>
+        ${this._renderPlayerDropdown(active)}
+      </div>
+      <div class="now-playing-wrap">
+        ${active.length === 0 ? this._renderNothingPlaying() : this._renderMediaCard(selId, selState)}
       </div>
     `;
 
     this._bindLeftEvents(panel);
   }
 
-  _renderNowPlaying(entityId, state) {
-    if (!state) {
+  _renderPlayerDropdown(activePlayers) {
+    if (activePlayers.length === 0) {
       return `
-        <div class="now-playing inactive">
-          <div class="album-art-placeholder">${ICON.music}</div>
-          <div class="track-info">
-            <div class="track-title" style="color:var(--secondary-text-color,#888)">No player selected</div>
-          </div>
+        <div class="player-select-custom">
+          <select disabled>
+            <option>No active players</option>
+          </select>
+          <span class="player-select-arrow"><svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg></span>
         </div>
       `;
     }
+    const options = activePlayers.map((id) => {
+      const s = this._hass.states[id];
+      const name = s?.attributes?.friendly_name || id;
+      const isPlaying = s?.state === "playing";
+      const indicator = isPlaying ? "▶ " : "⏸ ";
+      return `<option value="${id}" ${id === this._selectedPlayer ? "selected" : ""}>${indicator}${this._esc(name)}</option>`;
+    }).join("");
+    return `
+      <div class="player-select-custom">
+        <select id="playerSelect">${options}</select>
+        <span class="player-select-arrow"><svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg></span>
+      </div>
+    `;
+  }
+
+  _renderNothingPlaying() {
+    return `
+      <div class="nothing-playing">
+        <div class="nothing-playing-icon">
+          <div class="nothing-playing-icon-ring"></div>
+          <div class="nothing-playing-icon-ring"></div>
+          ${ICON.music}
+        </div>
+        <h3>Nothing Playing</h3>
+        <p>Start playing music in any room and it will appear here.</p>
+      </div>
+    `;
+  }
+
+  _renderMediaCard(entityId, state) {
+    if (!state) return this._renderNothingPlaying();
 
     const attr = state.attributes;
     const playing = state.state === "playing";
-    const paused = state.state === "paused";
-    const active = playing || paused;
-    const title = attr.media_title || "Unknown Track";
+    const art = attr.entity_picture
+      ? `<img class="media-art" src="${this._esc(attr.entity_picture)}" alt="">`
+      : `<div class="media-art-placeholder">${ICON.music}</div>`;
+    const title = attr.media_title || attr.media_album_name || "Unknown";
     const artist = attr.media_artist || attr.media_album_artist || "";
-    const album = attr.media_album_name || "";
-    const art = attr.entity_picture || null;
     const duration = attr.media_duration || 0;
     const position = attr.media_position || 0;
     const volume = attr.volume_level != null ? attr.volume_level : 1;
     const muted = attr.is_volume_muted || false;
-
     const progress = duration > 0 ? (position / duration) * 100 : 0;
 
     return `
-      <div class="now-playing ${active ? "" : "inactive"}">
-        ${
-          art
-            ? `<img class="album-art" src="${art}" alt="Album Art">`
-            : `<div class="album-art-placeholder">${ICON.music}</div>`
-        }
-        <div class="track-info">
-          <div class="track-title">${this._esc(title)}</div>
-          ${artist ? `<div class="track-artist">${this._esc(artist)}</div>` : ""}
-          ${album ? `<div class="track-album">${this._esc(album)}</div>` : ""}
+      <div class="media-card">
+        <div class="media-art-wrap">
+          ${art}
+          ${attr.entity_picture ? `<div class="media-art-gradient"></div>` : ""}
+          <div class="media-art-overlay-text">
+            <div class="media-art-title">${this._esc(title)}</div>
+            ${artist ? `<div class="media-art-artist">${this._esc(artist)}</div>` : ""}
+          </div>
         </div>
         <div class="progress-section">
-          <div class="progress-bar-wrap" id="progressBar">
+          <div class="progress-bar-wrap">
             <div class="progress-bar-fill" style="width:${progress}%"></div>
           </div>
           <div class="progress-times">
@@ -990,45 +1163,18 @@ class MediaDashboardPanel extends HTMLElement {
           <button class="mute-btn ${muted ? "muted" : ""}" id="btnMute">
             ${muted || volume === 0 ? ICON.volOff : volume < 0.5 ? ICON.volLow : ICON.volUp}
           </button>
-          <input type="range" id="volumeSlider" min="0" max="100"
-            value="${Math.round(volume * 100)}" style="flex:1">
+          <input type="range" id="volumeSlider" min="0" max="100" value="${Math.round(volume * 100)}" style="flex:1">
           <span class="volume-value">${Math.round(volume * 100)}%</span>
         </div>
       </div>
     `;
   }
 
-  _renderPlayerList() {
-    if (!this._hass || !this._players.length) {
-      return `<div style="color:var(--secondary-text-color,#888);font-size:0.85rem;padding:8px 4px">
-        No media players found
-      </div>`;
-    }
-    return this._players
-      .map((id) => {
-        const s = this._hass.states[id];
-        if (!s) return "";
-        const name = s.attributes.friendly_name || id;
-        const isPlaying = s.state === "playing";
-        const selected = id === this._selectedPlayer;
-        return `
-          <div class="player-item ${selected ? "selected" : ""}" data-entity="${id}">
-            <span class="player-status-dot ${isPlaying ? "playing" : ""}"></span>
-            <span class="player-item-name">${this._esc(name)}</span>
-            <span class="player-item-state">${this._esc(s.state)}</span>
-          </div>
-        `;
-      })
-      .join("");
-  }
-
   _bindLeftEvents(panel) {
-    // Player list selection
-    panel.querySelectorAll(".player-item").forEach((el) => {
-      el.addEventListener("click", () => {
-        this._selectedPlayer = el.dataset.entity;
-        this._updateAll();
-      });
+    // Dropdown selection
+    panel.querySelector("#playerSelect")?.addEventListener("change", (e) => {
+      this._selectedPlayer = e.target.value;
+      this._renderLeft();
     });
 
     // Play/pause
@@ -1037,26 +1183,19 @@ class MediaDashboardPanel extends HTMLElement {
       btnPP.addEventListener("click", () => {
         const state = this._hass?.states[this._selectedPlayer];
         if (!state) return;
-        const svc =
-          state.state === "playing" ? "media_pause" : "media_play";
-        this._callService("media_player", svc, {
-          entity_id: this._selectedPlayer,
-        });
+        const svc = state.state === "playing" ? "media_pause" : "media_play";
+        this._callService("media_player", svc, { entity_id: this._selectedPlayer });
       });
     }
 
     // Previous
     panel.querySelector("#btnPrev")?.addEventListener("click", () => {
-      this._callService("media_player", "media_previous_track", {
-        entity_id: this._selectedPlayer,
-      });
+      this._callService("media_player", "media_previous_track", { entity_id: this._selectedPlayer });
     });
 
     // Next
     panel.querySelector("#btnNext")?.addEventListener("click", () => {
-      this._callService("media_player", "media_next_track", {
-        entity_id: this._selectedPlayer,
-      });
+      this._callService("media_player", "media_next_track", { entity_id: this._selectedPlayer });
     });
 
     // Volume slider
