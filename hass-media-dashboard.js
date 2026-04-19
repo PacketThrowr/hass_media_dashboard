@@ -178,6 +178,7 @@ const STYLES = `
 
   .np-state-badge.playing { color: var(--green); border-color: rgba(52,211,153,0.35); }
   .np-state-badge.paused  { color: var(--text2); }
+  .np-state-badge.idle    { color: var(--text3); }
 
   /* ── Track info ── */
   .np-track-info {
@@ -1084,10 +1085,18 @@ class MediaDashboardPanel extends HTMLElement {
     if (!this._hassConnected) {
       this._hassConnected = true;
     }
-    this._pendingPlayState = null; // HA confirmed new state — stop overriding
     this._syncPlayers();
 
-    const active = this._activePlayers();
+    // Only clear pending play state once HA actually confirms the expected state —
+    // prevents the button from flickering back during intermediate state updates
+    if (this._pendingPlayState && this._selectedPlayer) {
+      const hassState = hass.states[this._selectedPlayer]?.state;
+      if (hassState === this._pendingPlayState) {
+        this._pendingPlayState = null;
+      }
+    }
+
+    const displayPlayers = this._displayPlayers();
     const findBest = (list) => {
       const master = list.find((id) => {
         const m = hass.states[id]?.attributes?.group_members;
@@ -1096,19 +1105,19 @@ class MediaDashboardPanel extends HTMLElement {
       return master || list.find((p) => hass.states[p]?.state === "playing") || list[0];
     };
 
-    if (!this._selectedPlayer && active.length) {
-      this._selectedPlayer = findBest(active);
-    } else if (this._selectedPlayer && !active.includes(this._selectedPlayer) && active.length) {
-      this._selectedPlayer = findBest(active);
-    } else if (!active.length) {
+    if (!this._selectedPlayer && displayPlayers.length) {
+      this._selectedPlayer = findBest(displayPlayers);
+    } else if (this._selectedPlayer && !displayPlayers.includes(this._selectedPlayer) && displayPlayers.length) {
+      this._selectedPlayer = findBest(displayPlayers);
+    } else if (!displayPlayers.length) {
       this._selectedPlayer = null;
     } else if (this._selectedPlayer) {
       const m = hass.states[this._selectedPlayer]?.attributes?.group_members;
       const isSlave = Array.isArray(m) && m.length > 1 && m[0] !== this._selectedPlayer;
-      if (isSlave) this._selectedPlayer = findBest(active);
+      if (isSlave) this._selectedPlayer = findBest(displayPlayers);
     }
 
-    // Fetch MA queue when player changes or position changes
+    // Fetch MA queue when player changes or track position changes
     const pos = hass.states[this._selectedPlayer]?.attributes?.queue_position;
     if (this._selectedPlayer && (this._lastQueuePlayer !== this._selectedPlayer || this._lastQueuePos !== pos)) {
       this._lastQueuePlayer = this._selectedPlayer;
@@ -1133,6 +1142,14 @@ class MediaDashboardPanel extends HTMLElement {
       const s = this._hass.states[id]?.state;
       return s === "playing" || s === "paused";
     });
+  }
+
+  // Players shown in the left panel dropdown — room-assigned ones only,
+  // falling back to all active players if no rooms have been configured yet.
+  _displayPlayers() {
+    const assigned = this._roomAssignedPlayers();
+    if (assigned.length > 0) return assigned.filter((id) => this._players.includes(id));
+    return this._activePlayers();
   }
 
   _roomAssignedPlayers() {
@@ -1161,18 +1178,18 @@ class MediaDashboardPanel extends HTMLElement {
     let items = [];
 
     const attempts = [
-      // MA 2.x integration format
-      { type: "music_assistant/queue_items", queue_id: queueId },
-      // Alternative format with entity_id
+      // Confirmed working format (user-verified)
+      { type: "music_assistant/get_queue", entity_id: entityId },
+      // Fallback formats
       { type: "music_assistant/queue_items", entity_id: entityId },
-      // Older MA format
+      { type: "music_assistant/queue_items", queue_id: queueId },
       { type: "mass/queue_items", queue_id: queueId },
     ];
 
     for (const msg of attempts) {
       try {
         const result = await this._hass.callWS(msg);
-        const raw = result?.items || result?.queue_items || result;
+        const raw = result?.items || result?.queue_items || result?.tracks || result?.queue?.items || result;
         if (Array.isArray(raw) && raw.length > 0) {
           items = raw;
           break;
@@ -1235,10 +1252,9 @@ class MediaDashboardPanel extends HTMLElement {
     const panel = this.shadowRoot.getElementById("leftPanel");
     if (!panel) return;
 
-    const active = this._activePlayers();
+    const players = this._displayPlayers();
     const selId = this._selectedPlayer;
     const selState = selId && this._hass ? this._hass.states[selId] : null;
-    const anyGrouped = this._roomAssignedPlayers().some((id) => this._isGrouped(id));
 
     panel.innerHTML = `
       <div class="lp-header">
@@ -1249,7 +1265,7 @@ class MediaDashboardPanel extends HTMLElement {
       </div>
 
       <div class="lp-body">
-        ${active.length === 0 ? this._renderNothingPlaying() : this._renderNowPlaying(selId, selState, active)}
+        ${players.length === 0 ? this._renderNothingPlaying() : this._renderNowPlaying(selId, selState, players)}
       </div>
 
       ${this._groupSheetOpen ? this._renderGroupSheet() : ""}
@@ -1295,14 +1311,16 @@ class MediaDashboardPanel extends HTMLElement {
       ? `<img class="np-art" src="${this._esc(art)}" alt="">`
       : `<div class="np-art-placeholder">${ICON.music}</div>`;
 
-    const badgeClass = isPlaying ? "playing" : "paused";
-    const badgeLabel = isPlaying ? "Playing" : isPaused ? "Paused" : state.state;
+    const badgeClass = isPlaying ? "playing" : isPaused ? "paused" : "idle";
+    const badgeLabel = isPlaying ? "Playing" : isPaused ? "Paused"
+      : effectiveState === "idle" ? "Idle" : effectiveState === "unavailable" ? "Unavailable" : effectiveState;
 
-    // Player dropdown (only active)
+    // Player dropdown — room-assigned players with state indicator
     const playerOptions = activePlayers.map((id) => {
       const s = this._hass.states[id];
       const name = s?.attributes?.friendly_name || id;
-      const pre = s?.state === "playing" ? "▶ " : "⏸ ";
+      const st = s?.state;
+      const pre = st === "playing" ? "▶ " : st === "paused" ? "⏸ " : "○ ";
       return `<option value="${id}" ${id === entityId ? "selected" : ""}>${pre}${this._esc(name)}</option>`;
     }).join("");
 
@@ -1541,13 +1559,19 @@ class MediaDashboardPanel extends HTMLElement {
     panel.querySelector("#btnPlayPause")?.addEventListener("click", () => {
       const s = this._hass?.states[this._selectedPlayer];
       if (!s) return;
-      // Use the pending state if set (optimistic), otherwise use real HA state
       const currentState = this._pendingPlayState ?? s.state;
       const willPlay = currentState !== "playing";
       this._pendingPlayState = willPlay ? "playing" : "paused";
       this._callService("media_player", willPlay ? "media_play" : "media_pause",
         { entity_id: this._selectedPlayer });
       this._renderLeft(); // immediate visual feedback
+
+      // Safety: force-clear pending state after 4s in case HA never confirms
+      clearTimeout(this._pendingPlayTimeout);
+      this._pendingPlayTimeout = setTimeout(() => {
+        this._pendingPlayState = null;
+        this._renderLeft();
+      }, 4000);
     });
 
     panel.querySelector("#btnPrev")?.addEventListener("click", () => {
