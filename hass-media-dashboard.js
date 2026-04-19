@@ -480,6 +480,24 @@ const STYLES = `
     font-size: 0.75rem; color: var(--text3); text-align: center;
   }
 
+  .next-item-wrap {
+    padding: 6px 16px 14px;
+  }
+
+  .next-item-label {
+    font-size: 0.62rem; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--text3); margin-bottom: 8px;
+  }
+
+  .next-item-row {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+  }
+
   /* ── Nothing Playing ── */
   .nothing-playing {
     flex: 1; display: flex; flex-direction: column;
@@ -1182,8 +1200,6 @@ class MediaDashboardPanel extends HTMLElement {
     let queueMeta = null;
 
     try {
-      // music_assistant.get_queue is a response service — call it via call_service
-      // with return_response:true. Response is nested under result.response.
       const result = await this._hass.callWS({
         type: "call_service",
         domain: "music_assistant",
@@ -1193,18 +1209,14 @@ class MediaDashboardPanel extends HTMLElement {
       });
 
       // HA wraps response-service results in { context, response }
-      const data = result?.response ?? result;
-
-      // MA get_queue returns queue metadata + items array
-      queueMeta = data;
-      const raw = data?.items ?? data?.queue_items ?? data?.tracks ?? [];
-      if (Array.isArray(raw)) items = raw;
+      queueMeta = result?.response ?? result;
     } catch (_) {
-      // Service unavailable or MA not installed — queue stays empty
+      // Service unavailable or MA not installed
     }
 
-    this._queueItems = items;
-    this._queueMeta  = queueMeta;  // store full response for shuffle/repeat state
+    // get_queue returns metadata only — current_item + next_item, not a full list
+    this._queueItems = [];
+    this._queueMeta  = queueMeta;
     this._queueFetching = false;
     this._renderLeft();
   }
@@ -1379,79 +1391,80 @@ class MediaDashboardPanel extends HTMLElement {
   }
 
   _renderQueueSection(qPos, qSize) {
-    const items = this._queueItems;
-    const meta  = this._queueMeta;
-    const hasItems = items.length > 0;
+    const meta = this._queueMeta;
 
-    // Prefer counts from MA response, fall back to entity attributes
-    const totalCount  = meta?.items?.length ?? meta?.queue_size ?? qSize ?? (hasItems ? items.length : null);
-    const currentIdx  = meta?.current_index ?? (qPos != null ? qPos - 1 : null);
-    const remaining   = totalCount != null && currentIdx != null ? totalCount - currentIdx - 1 : null;
-    const shuffle     = meta?.shuffle_enabled ?? meta?.shuffle ?? false;
-    const repeat      = meta?.repeat_mode ?? meta?.repeat ?? "off";
+    // Pull from MA response; fall back to entity attributes
+    const totalCount = meta?.items   ?? qSize   ?? null;   // items is a count in MA response
+    const currentIdx = meta?.current_index ?? (qPos != null ? qPos - 1 : null);
+    const shuffle    = meta?.shuffle_enabled ?? false;
+    const repeat     = meta?.repeat_mode ?? "off";
+    const nextItem   = meta?.next_item ?? null;
 
-    const countLabel  = currentIdx != null && totalCount != null
-      ? `${currentIdx + 1} / ${totalCount}`
+    const trackNum   = currentIdx != null ? currentIdx + 1 : null;
+    const countLabel = trackNum != null && totalCount != null
+      ? `${trackNum} / ${totalCount}`
       : totalCount ? `${totalCount} tracks` : "";
 
     const openClass = this._queueOpen ? "queue-open" : "";
 
+    const shuffleBadge = shuffle
+      ? `<span class="queue-mode-badge active" title="Shuffle on">⇄</span>` : "";
+    const repeatBadge  = repeat !== "off"
+      ? `<span class="queue-mode-badge active" title="Repeat: ${repeat}">↻</span>` : "";
+
     let bodyHtml;
     if (this._queueFetching) {
       bodyHtml = `<div class="queue-load-hint">Loading queue…</div>`;
-    } else if (hasItems) {
-      bodyHtml = items.slice(0, 30).map((item, i) => this._renderQueueItem(item, i, currentIdx)).join("");
-    } else if (totalCount) {
-      bodyHtml = `<div class="queue-load-hint">${totalCount} track${totalCount !== 1 ? "s" : ""} in queue${remaining != null ? ` · ${remaining} remaining` : ""}</div>`;
+    } else if (!meta && !totalCount) {
+      bodyHtml = `<div class="queue-load-hint">Queue unavailable</div>`;
+    } else if (nextItem) {
+      bodyHtml = this._renderNextItem(nextItem);
+    } else if (totalCount && trackNum === totalCount) {
+      bodyHtml = `<div class="queue-load-hint">Last track in queue</div>`;
     } else {
-      bodyHtml = `<div class="queue-load-hint">Queue empty</div>`;
+      bodyHtml = `<div class="queue-load-hint">No next track</div>`;
     }
-
-    const shuffleIcon = shuffle
-      ? `<span class="queue-mode-badge active" title="Shuffle on">⇄</span>`
-      : "";
-    const repeatIcon = repeat !== "off"
-      ? `<span class="queue-mode-badge active" title="Repeat: ${repeat}">↻</span>`
-      : "";
 
     return `
       <div class="lp-divider"></div>
       <div class="queue-header ${openClass}" id="queueToggle">
         <span class="queue-header-label">${ICON.queue} Queue</span>
         ${countLabel ? `<span class="queue-count-badge">${countLabel}</span>` : ""}
-        ${shuffleIcon}${repeatIcon}
+        ${shuffleBadge}${repeatBadge}
         <span class="queue-chevron">${ICON.chevronDown}</span>
       </div>
       ${this._queueOpen ? `<div class="queue-list">${bodyHtml}</div>` : ""}
     `;
   }
 
-  _renderQueueItem(item, index, currentIdx) {
-    // MA get_queue returns items with queue_item_id, name, duration, artists[], image
-    // Position in queue is the array index; queue_item_id is MA's internal ID
-    const pos = item.queue_item_id != null ? index : (item.position ?? index);
-    const isCurrent = currentIdx != null && index === currentIdx;
-
-    const title  = item.name || item.track?.name || item.media_title || "Unknown";
-    const artist = item.artists?.[0]?.name
-                || item.track?.artists?.[0]?.name
-                || item.media_artist || "";
-    const thumb  = item.image || item.media_image_url
-                || item.track?.image || null;
+  _renderNextItem(item) {
+    // Extract from MA's current_item / next_item structure:
+    // item.name = "Artist - Title" (formatted)
+    // item.media_item.name = track name only
+    // item.media_item.artists[0].name = artist
+    // item.media_item.image = album art URL
+    // item.media_item.album.name = album name
+    const mi     = item.media_item ?? {};
+    const title  = mi.name  || item.name  || "Unknown";
+    const artist = mi.artists?.[0]?.name  || "";
+    const album  = mi.album?.name         || "";
+    const thumb  = mi.image || mi.album?.image || null;
     const dur    = item.duration ? formatTime(item.duration) : "";
 
     return `
-      <div class="queue-item ${isCurrent ? "current" : ""}">
-        <span class="queue-item-num">${isCurrent ? "▶" : index + 1}</span>
-        ${thumb
-          ? `<img class="queue-item-thumb" src="${this._esc(thumb)}" alt="">`
-          : `<div class="queue-item-thumb-placeholder">${ICON.music}</div>`
-        }
-        <div class="queue-item-info">
-          <div class="queue-item-title">${this._esc(title)}</div>
-          ${artist ? `<div class="queue-item-artist">${this._esc(artist)}</div>` : ""}
+      <div class="next-item-wrap">
+        <div class="next-item-label">Up Next</div>
+        <div class="next-item-row">
+          ${thumb
+            ? `<img class="queue-item-thumb" src="${this._esc(thumb)}" alt="">`
+            : `<div class="queue-item-thumb-placeholder">${ICON.music}</div>`
+          }
+          <div class="queue-item-info">
+            <div class="queue-item-title">${this._esc(title)}</div>
+            <div class="queue-item-artist">${this._esc([artist, album].filter(Boolean).join(" · "))}</div>
+          </div>
+          ${dur ? `<span class="queue-item-dur">${dur}</span>` : ""}
         </div>
-        ${dur ? `<span class="queue-item-dur">${dur}</span>` : ""}
       </div>
     `;
   }
