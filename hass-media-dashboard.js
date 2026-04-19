@@ -1209,17 +1209,31 @@ class MediaDashboardPanel extends HTMLElement {
       this._subscribePlayers();
     }
     this._syncPlayers();
-    // Auto-select: prefer a playing player; if current selection stopped, pick next active one
     const activePlayers = this._players.filter(
       (p) => hass.states[p]?.state === "playing" || hass.states[p]?.state === "paused"
     );
+    // Prefer group master so Now Playing always shows the master player's context
+    const findBestPlayer = (candidates) => {
+      const master = candidates.find((id) => {
+        const members = hass.states[id]?.attributes?.group_members;
+        return Array.isArray(members) && members.length > 1 && members[0] === id;
+      });
+      return master || candidates.find((p) => hass.states[p]?.state === "playing") || candidates[0];
+    };
     if (!this._selectedPlayer && activePlayers.length) {
-      this._selectedPlayer = activePlayers.find((p) => hass.states[p]?.state === "playing") || activePlayers[0];
+      this._selectedPlayer = findBestPlayer(activePlayers);
     } else if (this._selectedPlayer && !activePlayers.includes(this._selectedPlayer) && activePlayers.length) {
-      // Previously selected player is no longer active — switch to one that is
-      this._selectedPlayer = activePlayers.find((p) => hass.states[p]?.state === "playing") || activePlayers[0];
+      this._selectedPlayer = findBestPlayer(activePlayers);
     } else if (!activePlayers.length) {
       this._selectedPlayer = null;
+    } else if (this._selectedPlayer && activePlayers.length) {
+      // If a group has formed, switch to the master automatically
+      const master = findBestPlayer(activePlayers);
+      const currentIsGroupMember =
+        Array.isArray(hass.states[this._selectedPlayer]?.attributes?.group_members) &&
+        hass.states[this._selectedPlayer].attributes.group_members.length > 1 &&
+        hass.states[this._selectedPlayer].attributes.group_members[0] !== this._selectedPlayer;
+      if (currentIsGroupMember) this._selectedPlayer = master;
     }
     this._updateAll();
   }
@@ -1290,7 +1304,10 @@ class MediaDashboardPanel extends HTMLElement {
 
   _updateAll() {
     this._renderLeft();
-    this._renderRight();
+    // Don't clobber the room modal while the user is filling it in
+    if (this._editingRoom === null) {
+      this._renderRight();
+    }
   }
 
   // ── Left Panel ───────────────────────────────────────────────────────────────
@@ -1720,7 +1737,6 @@ class MediaDashboardPanel extends HTMLElement {
           <div id="svgContainer">${this._floorPlanSrc}</div>
           ${roomOverlays}
           ${roomPopup}
-          <button class="add-room-btn" id="btnAddRoomFab" title="Add Room">${ICON.add}</button>
         </div>
       `;
     } else {
@@ -1729,7 +1745,6 @@ class MediaDashboardPanel extends HTMLElement {
           <img src="${this._floorPlanSrc}" id="floorImg" alt="Floor Plan">
           ${roomOverlays}
           ${roomPopup}
-          <button class="add-room-btn" id="btnAddRoomFab" title="Add Room">${ICON.add}</button>
         </div>
       `;
     }
@@ -1867,11 +1882,6 @@ class MediaDashboardPanel extends HTMLElement {
 
     // Add room (toolbar)
     panel.querySelector("#btnAddRoom")?.addEventListener("click", () => {
-      this._startPlacingRoom();
-    });
-
-    // Add room FAB
-    panel.querySelector("#btnAddRoomFab")?.addEventListener("click", () => {
       this._startPlacingRoom();
     });
 
