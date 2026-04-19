@@ -383,7 +383,7 @@ const STYLES = `
     max-width: 220px;
   }
 
-  /* ── Player status dot (used in popup) ── */
+  /* ── Player status dot ── */
   .player-status-dot {
     width: 7px;
     height: 7px;
@@ -395,6 +395,248 @@ const STYLES = `
   .player-status-dot.playing {
     background: #4caf50;
     box-shadow: 0 0 5px #4caf50;
+  }
+
+  /* ── Left panel tabs ── */
+  .left-tabs {
+    display: flex;
+    gap: 2px;
+    padding: 12px 12px 0;
+    flex-shrink: 0;
+  }
+
+  .left-tab {
+    flex: 1;
+    padding: 9px 10px;
+    background: none;
+    border: none;
+    border-radius: 8px 8px 0 0;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--secondary-text-color, #777);
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: color 0.15s, background 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-bottom: 2px solid transparent;
+  }
+
+  .left-tab svg {
+    width: 15px;
+    height: 15px;
+    fill: currentColor;
+    flex-shrink: 0;
+  }
+
+  .left-tab:hover {
+    color: var(--primary-text-color, #ccc);
+    background: rgba(255,255,255,0.04);
+  }
+
+  .left-tab.active {
+    color: var(--accent-color, #9c6fef);
+    border-bottom-color: var(--accent-color, #9c6fef);
+  }
+
+  .left-tab-divider {
+    height: 1px;
+    background: var(--divider-color, #2a2a2a);
+    flex-shrink: 0;
+  }
+
+  /* ── Group Audio panel ── */
+  .group-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .group-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 0 100px;
+  }
+
+  .group-room-section {
+    padding: 0 16px;
+    margin-bottom: 4px;
+  }
+
+  .group-room-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--secondary-text-color, #555);
+    padding: 12px 0 6px;
+  }
+
+  .group-speaker-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 6px;
+  }
+
+  .group-speaker-entry {
+    background: var(--secondary-background-color, #212121);
+    border-radius: 10px;
+    padding: 12px 14px 10px;
+    border: 1px solid transparent;
+    transition: border-color 0.15s;
+  }
+
+  .group-speaker-entry.selected {
+    border-color: rgba(98,0,234,0.4);
+    background: rgba(98,0,234,0.08);
+  }
+
+  .group-speaker-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .group-check {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    border: 2px solid var(--divider-color, #444);
+    background: transparent;
+    cursor: pointer;
+    flex-shrink: 0;
+    position: relative;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .group-check:checked {
+    background: var(--accent-color, #6200ea);
+    border-color: var(--accent-color, #6200ea);
+  }
+
+  .group-check:checked::after {
+    content: '';
+    position: absolute;
+    left: 3px;
+    top: 1px;
+    width: 5px;
+    height: 9px;
+    border: 2px solid #fff;
+    border-left: none;
+    border-top: none;
+    transform: rotate(45deg);
+  }
+
+  .group-speaker-name {
+    flex: 1;
+    font-size: 0.88rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .group-speaker-state {
+    font-size: 0.72rem;
+    color: var(--secondary-text-color, #666);
+    flex-shrink: 0;
+  }
+
+  .group-speaker-state.playing {
+    color: #4caf50;
+  }
+
+  .group-speaker-state.grouped {
+    color: var(--accent-color, #9c6fef);
+  }
+
+  .group-vol-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .group-vol-row .mute-btn svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .group-vol-row .volume-value {
+    font-size: 0.7rem;
+    min-width: 28px;
+  }
+
+  /* Group action bar */
+  .group-action-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 12px 16px 16px;
+    background: linear-gradient(to bottom, transparent, var(--card-background-color, #1c1c1c) 40%);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .group-action-bar .btn {
+    width: 100%;
+    padding: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .group-action-bar .btn svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+  }
+
+  .group-action-bar .btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .group-empty {
+    padding: 40px 24px;
+    text-align: center;
+    color: var(--secondary-text-color, #666);
+    font-size: 0.85rem;
+    line-height: 1.6;
+  }
+
+  .group-master-hint {
+    font-size: 0.72rem;
+    color: var(--secondary-text-color, #666);
+    text-align: center;
+    padding: 0 4px;
+  }
+
+  .master-badge {
+    display: inline-block;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: var(--accent-color, #6200ea);
+    color: #fff;
+    padding: 1px 5px;
+    border-radius: 4px;
+    margin-left: 4px;
+    vertical-align: middle;
   }
 
   /* ── Right Panel ── */
@@ -914,6 +1156,9 @@ const ICON = {
   edit: `<svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>`,
   delete: `<svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>`,
   add: `<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>`,
+  group: `<svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>`,
+  link: `<svg viewBox="0 0 24 24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>`,
+  unlink: `<svg viewBox="0 0 24 24"><path d="M17 7h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5zm-6 8H7c-1.71 0-3.1-1.39-3.1-3.1S5.29 8.9 7 8.9h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9zm-1-4h4v-2h-4v2z"/></svg>`,
 };
 
 // ── Room Overlay dragging utilities ──────────────────────────────────────────
@@ -946,6 +1191,8 @@ class MediaDashboardPanel extends HTMLElement {
     this._placingRoom = false;    // waiting for click on floor plan
     this._dragState = null;       // for dragging rooms
     this._progressTimer = null;
+    this._leftTab = "playing";    // "playing" | "group"
+    this._groupSelection = new Set(); // entity IDs checked for joining
 
     this._loadPersisted();
     this._render();
@@ -1056,34 +1303,69 @@ class MediaDashboardPanel extends HTMLElement {
     });
   }
 
+  // All unique entity IDs that are assigned to at least one room
+  _roomAssignedPlayers() {
+    const ids = new Set();
+    this._rooms.forEach((r) => (r.entities || []).forEach((id) => ids.add(id)));
+    return [...ids];
+  }
+
+  // Detect if an entity is currently part of a multi-room group
+  _isGrouped(entityId) {
+    const state = this._hass?.states[entityId];
+    if (!state) return false;
+    const members = state.attributes.group_members;
+    return Array.isArray(members) && members.length > 1;
+  }
+
+  _groupMaster(entityId) {
+    const state = this._hass?.states[entityId];
+    const members = state?.attributes?.group_members;
+    if (!Array.isArray(members) || members.length <= 1) return null;
+    // The master is typically the first member or the one matching entity_id
+    return members[0];
+  }
+
   _renderLeft() {
     const panel = this.shadowRoot.getElementById("leftPanel");
     if (!panel) return;
 
+    panel.innerHTML = `
+      <div class="left-tabs">
+        <button class="left-tab ${this._leftTab === "playing" ? "active" : ""}" data-tab="playing">
+          ${ICON.music} Now Playing
+        </button>
+        <button class="left-tab ${this._leftTab === "group" ? "active" : ""}" data-tab="group">
+          ${ICON.group} Group Audio
+        </button>
+      </div>
+      <div class="left-tab-divider"></div>
+      ${this._leftTab === "playing" ? this._renderNowPlayingTab() : this._renderGroupTab()}
+    `;
+
+    this._bindLeftEvents(panel);
+  }
+
+  _renderNowPlayingTab() {
     const active = this._activePlayers();
     const selId = this._selectedPlayer;
     const selState = selId && this._hass ? this._hass.states[selId] : null;
-
-    panel.innerHTML = `
+    return `
       <div class="player-dropdown-wrap">
-        <div class="dropdown-label">Now Playing</div>
+        <div class="dropdown-label">Active Player</div>
         ${this._renderPlayerDropdown(active)}
       </div>
       <div class="now-playing-wrap">
         ${active.length === 0 ? this._renderNothingPlaying() : this._renderMediaCard(selId, selState)}
       </div>
     `;
-
-    this._bindLeftEvents(panel);
   }
 
   _renderPlayerDropdown(activePlayers) {
     if (activePlayers.length === 0) {
       return `
         <div class="player-select-custom">
-          <select disabled>
-            <option>No active players</option>
-          </select>
+          <select disabled><option>No active players</option></select>
           <span class="player-select-arrow"><svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg></span>
         </div>
       `;
@@ -1091,8 +1373,7 @@ class MediaDashboardPanel extends HTMLElement {
     const options = activePlayers.map((id) => {
       const s = this._hass.states[id];
       const name = s?.attributes?.friendly_name || id;
-      const isPlaying = s?.state === "playing";
-      const indicator = isPlaying ? "▶ " : "⏸ ";
+      const indicator = s?.state === "playing" ? "▶ " : "⏸ ";
       return `<option value="${id}" ${id === this._selectedPlayer ? "selected" : ""}>${indicator}${this._esc(name)}</option>`;
     }).join("");
     return `
@@ -1119,7 +1400,6 @@ class MediaDashboardPanel extends HTMLElement {
 
   _renderMediaCard(entityId, state) {
     if (!state) return this._renderNothingPlaying();
-
     const attr = state.attributes;
     const playing = state.state === "playing";
     const art = attr.entity_picture
@@ -1132,7 +1412,6 @@ class MediaDashboardPanel extends HTMLElement {
     const volume = attr.volume_level != null ? attr.volume_level : 1;
     const muted = attr.is_volume_muted || false;
     const progress = duration > 0 ? (position / duration) * 100 : 0;
-
     return `
       <div class="media-card">
         <div class="media-art-wrap">
@@ -1170,14 +1449,112 @@ class MediaDashboardPanel extends HTMLElement {
     `;
   }
 
+  // ── Group Audio Tab ───────────────────────────────────────────────────────────
+
+  _renderGroupTab() {
+    const assigned = this._roomAssignedPlayers();
+    if (assigned.length === 0) {
+      return `
+        <div class="group-panel">
+          <div class="group-empty">
+            Assign speakers to rooms on the floor plan first.<br>Only room-assigned speakers appear here.
+          </div>
+        </div>
+      `;
+    }
+
+    // Build room → speakers map (only room-assigned ones)
+    const roomSpeakers = this._rooms
+      .filter((r) => r.entities && r.entities.length > 0)
+      .map((r) => ({ room: r, entities: r.entities }));
+
+    // Check if any assigned player is currently grouped
+    const anyGrouped = assigned.some((id) => this._isGrouped(id));
+    const selectedArr = [...this._groupSelection];
+
+    const rows = roomSpeakers.map(({ room, entities }) => `
+      <div class="group-room-section">
+        <div class="group-room-label">${this._esc(room.name)}</div>
+        <div class="group-speaker-row">
+          ${entities.map((id) => this._renderGroupSpeakerEntry(id, selectedArr)).join("")}
+        </div>
+      </div>
+    `).join("");
+
+    const selCount = selectedArr.length;
+    const joinDisabled = selCount < 2 ? "disabled" : "";
+    const firstSel = selectedArr[0];
+    const masterName = firstSel
+      ? (this._hass?.states[firstSel]?.attributes?.friendly_name || firstSel)
+      : "";
+
+    return `
+      <div class="group-panel" style="position:relative">
+        <div class="group-scroll">${rows}</div>
+        <div class="group-action-bar">
+          ${selCount >= 2 ? `<div class="group-master-hint">Master: <strong>${this._esc(masterName)}</strong> — others join it</div>` : ""}
+          <button class="btn btn-primary" id="btnJoinGroup" ${joinDisabled}>
+            ${ICON.link} Join ${selCount >= 2 ? `${selCount} Speakers` : "— Select 2+"}
+          </button>
+          ${anyGrouped ? `<button class="btn btn-secondary" id="btnUnjoinAll">${ICON.unlink} Unjoin All Groups</button>` : ""}
+        </div>
+      </div>
+    `;
+  }
+
+  _renderGroupSpeakerEntry(entityId, selectedArr) {
+    const state = this._hass?.states[entityId];
+    const name = state?.attributes?.friendly_name || entityId;
+    const st = state?.state || "unavailable";
+    const vol = state?.attributes?.volume_level != null
+      ? Math.round(state.attributes.volume_level * 100) : 50;
+    const muted = state?.attributes?.is_volume_muted || false;
+    const isGrouped = this._isGrouped(entityId);
+    const isChecked = selectedArr.includes(entityId);
+    const isFirst = isChecked && selectedArr[0] === entityId;
+
+    let stateLabel = st;
+    let stateClass = st === "playing" ? "playing" : "";
+    if (isGrouped) { stateLabel = "grouped"; stateClass = "grouped"; }
+
+    return `
+      <div class="group-speaker-entry ${isChecked ? "selected" : ""}">
+        <div class="group-speaker-top">
+          <input type="checkbox" class="group-check" data-group-entity="${entityId}"
+            ${isChecked ? "checked" : ""}>
+          <span class="group-speaker-name">
+            ${this._esc(name)}
+            ${isFirst ? `<span class="master-badge">master</span>` : ""}
+          </span>
+          <span class="group-speaker-state ${stateClass}">${stateLabel}</span>
+        </div>
+        <div class="group-vol-row">
+          <button class="mute-btn ${muted ? "muted" : ""}" data-group-mute="${entityId}">
+            ${muted || vol === 0 ? ICON.volOff : vol < 50 ? ICON.volLow : ICON.volUp}
+          </button>
+          <input type="range" min="0" max="100" value="${vol}"
+            data-group-vol="${entityId}" style="flex:1">
+          <span class="volume-value" data-group-vol-label="${entityId}">${vol}%</span>
+        </div>
+      </div>
+    `;
+  }
+
   _bindLeftEvents(panel) {
-    // Dropdown selection
+    // Tab switching
+    panel.querySelectorAll(".left-tab").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        this._leftTab = btn.dataset.tab;
+        this._renderLeft();
+      });
+    });
+
+    // ── Now Playing tab ──
     panel.querySelector("#playerSelect")?.addEventListener("change", (e) => {
       this._selectedPlayer = e.target.value;
       this._renderLeft();
     });
 
-    // Play/pause
     const btnPP = panel.querySelector("#btnPlayPause");
     if (btnPP) {
       btnPP.addEventListener("click", () => {
@@ -1188,17 +1565,14 @@ class MediaDashboardPanel extends HTMLElement {
       });
     }
 
-    // Previous
     panel.querySelector("#btnPrev")?.addEventListener("click", () => {
       this._callService("media_player", "media_previous_track", { entity_id: this._selectedPlayer });
     });
 
-    // Next
     panel.querySelector("#btnNext")?.addEventListener("click", () => {
       this._callService("media_player", "media_next_track", { entity_id: this._selectedPlayer });
     });
 
-    // Volume slider
     const slider = panel.querySelector("#volumeSlider");
     if (slider) {
       const setVol = debounce((val) => {
@@ -1215,7 +1589,6 @@ class MediaDashboardPanel extends HTMLElement {
       });
     }
 
-    // Mute
     panel.querySelector("#btnMute")?.addEventListener("click", () => {
       const state = this._hass?.states[this._selectedPlayer];
       if (!state) return;
@@ -1223,6 +1596,75 @@ class MediaDashboardPanel extends HTMLElement {
         entity_id: this._selectedPlayer,
         is_volume_muted: !state.attributes.is_volume_muted,
       });
+    });
+
+    // ── Group Audio tab ──
+    panel.querySelectorAll("[data-group-entity]").forEach((cb) => {
+      cb.addEventListener("change", () => {
+        const id = cb.dataset.groupEntity;
+        if (cb.checked) {
+          this._groupSelection.add(id);
+        } else {
+          this._groupSelection.delete(id);
+        }
+        this._renderLeft();
+      });
+    });
+
+    // Group volume sliders (debounced per entity)
+    const groupVolDebounces = {};
+    panel.querySelectorAll("[data-group-vol]").forEach((sl) => {
+      const entityId = sl.dataset.groupVol;
+      if (!groupVolDebounces[entityId]) {
+        groupVolDebounces[entityId] = debounce((val) => {
+          this._callService("media_player", "volume_set", {
+            entity_id: entityId,
+            volume_level: val / 100,
+          });
+        }, 300);
+      }
+      sl.addEventListener("input", (e) => {
+        const val = parseInt(e.target.value);
+        const label = panel.querySelector(`[data-group-vol-label="${entityId}"]`);
+        if (label) label.textContent = `${val}%`;
+        groupVolDebounces[entityId](val);
+      });
+    });
+
+    // Group mute buttons
+    panel.querySelectorAll("[data-group-mute]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const entityId = btn.dataset.groupMute;
+        const state = this._hass?.states[entityId];
+        if (!state) return;
+        this._callService("media_player", "volume_mute", {
+          entity_id: entityId,
+          is_volume_muted: !state.attributes.is_volume_muted,
+        });
+      });
+    });
+
+    // Join button
+    panel.querySelector("#btnJoinGroup")?.addEventListener("click", () => {
+      const members = [...this._groupSelection];
+      if (members.length < 2) return;
+      const [master, ...rest] = members;
+      this._callService("media_player", "join", {
+        entity_id: master,
+        group_members: rest,
+      });
+    });
+
+    // Unjoin all
+    panel.querySelector("#btnUnjoinAll")?.addEventListener("click", () => {
+      const assigned = this._roomAssignedPlayers();
+      assigned.forEach((id) => {
+        if (this._isGrouped(id)) {
+          this._callService("media_player", "unjoin", { entity_id: id });
+        }
+      });
+      this._groupSelection.clear();
+      this._renderLeft();
     });
   }
 
