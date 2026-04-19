@@ -1,0 +1,10 @@
+# Add this to your Home Assistant configuration.yaml
+# After installing via HACS, the file lives at /hacsfiles/<repo-name>/<filename>
+# Replace YOUR_GITHUB_REPO_NAME with the name of your GitHub repository.
+
+panel_custom:
+  - name: hass-media-dashboard
+    sidebar_title: Media Dashboard
+    sidebar_icon: mdi:speaker-multiple
+    url_path: media-dashboard
+    module_url: /hacsfiles/hass_media_dashboard/hass-media-dashboard.js

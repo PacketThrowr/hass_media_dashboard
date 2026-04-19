@@ -1,0 +1,6 @@
+{
+  "name": "Hass Media Dashboard",
+  "render_readme": true,
+  "filename": "hass-media-dashboard.js",
+  "content_in_root": true
+}
