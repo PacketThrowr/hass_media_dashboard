@@ -1053,6 +1053,7 @@ class MediaDashboardPanel extends HTMLElement {
     // Player state
     this._players = [];
     this._selectedPlayer = null;
+    this._pendingPlayState = null;  // optimistic play/pause state, cleared on next hass update
     this._queueItems = [];
     this._queueOpen = true;
     this._queueFetching = false;
@@ -1083,6 +1084,7 @@ class MediaDashboardPanel extends HTMLElement {
     if (!this._hassConnected) {
       this._hassConnected = true;
     }
+    this._pendingPlayState = null; // HA confirmed new state — stop overriding
     this._syncPlayers();
 
     const active = this._activePlayers();
@@ -1151,22 +1153,38 @@ class MediaDashboardPanel extends HTMLElement {
     const state = this._hass.states[entityId];
     if (!state) return;
 
-    const queueId = state.attributes.mass_queue_id || state.attributes.queue_id;
-    if (!queueId) { this._queueItems = []; return; }
+    // MA exposes queue items via websocket. Try known message formats in order.
+    const massPlayerId = state.attributes.mass_player_id;
+    const queueId = state.attributes.mass_queue_id || massPlayerId || entityId;
 
     this._queueFetching = true;
-    try {
-      const result = await this._hass.callWS({
-        type: "music_assistant/queue_items",
-        queue_id: queueId,
-      });
-      this._queueItems = result?.items || result || [];
-    } catch (_) {
-      this._queueItems = [];
-    } finally {
-      this._queueFetching = false;
-      this._renderLeft();
+    let items = [];
+
+    const attempts = [
+      // MA 2.x integration format
+      { type: "music_assistant/queue_items", queue_id: queueId },
+      // Alternative format with entity_id
+      { type: "music_assistant/queue_items", entity_id: entityId },
+      // Older MA format
+      { type: "mass/queue_items", queue_id: queueId },
+    ];
+
+    for (const msg of attempts) {
+      try {
+        const result = await this._hass.callWS(msg);
+        const raw = result?.items || result?.queue_items || result;
+        if (Array.isArray(raw) && raw.length > 0) {
+          items = raw;
+          break;
+        }
+      } catch (_) {
+        // try next format
+      }
     }
+
+    this._queueItems = items;
+    this._queueFetching = false;
+    this._renderLeft();
   }
 
   // ── Persistence ───────────────────────────────────────────────────────────────
@@ -1257,8 +1275,10 @@ class MediaDashboardPanel extends HTMLElement {
     if (!state) return this._renderNothingPlaying();
 
     const attr = state.attributes;
-    const isPlaying = state.state === "playing";
-    const isPaused  = state.state === "paused";
+    // Use optimistic local state if we just clicked play/pause and HA hasn't confirmed yet
+    const effectiveState = this._pendingPlayState ?? state.state;
+    const isPlaying = effectiveState === "playing";
+    const isPaused  = effectiveState === "paused";
     const title    = attr.media_title || attr.media_album_name || "Unknown";
     const artist   = attr.media_artist || attr.media_album_artist || "";
     const album    = attr.media_album_name && attr.media_title ? attr.media_album_name : "";
@@ -1338,8 +1358,23 @@ class MediaDashboardPanel extends HTMLElement {
   _renderQueueSection(qPos, qSize) {
     const items = this._queueItems;
     const hasItems = items.length > 0;
-    const countLabel = qPos && qSize ? `${qPos} / ${qSize}` : qSize ? `${qSize} tracks` : "";
+    const remaining = qSize && qPos ? qSize - qPos : null;
+    const countLabel = qPos && qSize
+      ? `${qPos} / ${qSize}`
+      : qSize ? `${qSize} tracks` : hasItems ? `${items.length} tracks` : "";
     const openClass = this._queueOpen ? "queue-open" : "";
+
+    let bodyHtml;
+    if (this._queueFetching) {
+      bodyHtml = `<div class="queue-load-hint">Loading queue…</div>`;
+    } else if (hasItems) {
+      bodyHtml = items.slice(0, 25).map((item, i) => this._renderQueueItem(item, i, qPos)).join("");
+    } else if (qSize) {
+      // WS data unavailable but attributes tell us there's a queue
+      bodyHtml = `<div class="queue-load-hint">${qSize} track${qSize !== 1 ? "s" : ""} in queue${remaining ? ` · ${remaining} remaining` : ""}</div>`;
+    } else {
+      bodyHtml = `<div class="queue-load-hint" style="color:var(--text3)">No queue information available</div>`;
+    }
 
     return `
       <div class="lp-divider"></div>
@@ -1348,20 +1383,7 @@ class MediaDashboardPanel extends HTMLElement {
         ${countLabel ? `<span class="queue-count-badge">${countLabel}</span>` : ""}
         <span class="queue-chevron">${ICON.chevronDown}</span>
       </div>
-      ${this._queueOpen ? `
-        <div class="queue-list">
-          ${hasItems
-            ? items.slice(0, 20).map((item, i) => this._renderQueueItem(item, i, qPos)).join("")
-            : `<div class="queue-load-hint">${
-                this._queueFetching
-                  ? "Loading queue…"
-                  : qSize
-                  ? `${qSize} tracks in queue`
-                  : "No queue data available"
-              }</div>`
-          }
-        </div>
-      ` : ""}
+      ${this._queueOpen ? `<div class="queue-list">${bodyHtml}</div>` : ""}
     `;
   }
 
@@ -1519,8 +1541,13 @@ class MediaDashboardPanel extends HTMLElement {
     panel.querySelector("#btnPlayPause")?.addEventListener("click", () => {
       const s = this._hass?.states[this._selectedPlayer];
       if (!s) return;
-      this._callService("media_player", s.state === "playing" ? "media_pause" : "media_play",
+      // Use the pending state if set (optimistic), otherwise use real HA state
+      const currentState = this._pendingPlayState ?? s.state;
+      const willPlay = currentState !== "playing";
+      this._pendingPlayState = willPlay ? "playing" : "paused";
+      this._callService("media_player", willPlay ? "media_play" : "media_pause",
         { entity_id: this._selectedPlayer });
+      this._renderLeft(); // immediate visual feedback
     });
 
     panel.querySelector("#btnPrev")?.addEventListener("click", () => {
